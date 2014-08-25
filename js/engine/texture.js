@@ -4,17 +4,20 @@ function Texture(image, options){
 	var options = options === undefined ? {} : options;
 
 	this.image = image;
-
-	this.stripWidth = options.width || this.image.width;
-	this.width = this.stripWidth;
-	this.height = options.height || this.image.height;
-
+	
+	this.stripWidth = this.image.width;
+	this.width = options.width === undefined ? this.stripWidth : options.width;
+	this.height = options.height === undefined ? this.image.height : options.height;
+	
 	this.onAnimationEnd = function(){};
+	this.onFrames = options.onFrames === undefined ? [] : options.onFrames;
+	this.lastFrame = 0;
 	this.ended = false;
 
 	this.clip = options.clip === undefined ? {x: 0, y: 0, width: _this.width, height: _this.height} : options.clip;
 	
 	this.scale = options.scale === undefined ? new Vec2(1,1) : options.scale;
+	this.position = options.position === undefined ? new Vec2() : options.position;
 
 	this.alpha = options.alpha === undefined ? 1 : options.alpha;
 
@@ -31,10 +34,27 @@ function Texture(image, options){
 			this.animations[i].end = this.animations[i].end === undefined ? 0 : this.animations[i].end;
 		}
 
-		this.width = Math.round(this.stripWidth/options.totalFrames);
-
+		var __width = Math.round(this.stripWidth/options.totalFrames);
+		
 		// buď specifikovaná animace nebo alespoň nějaké, o které vím
 		this.switchAnimation(options.currentAnimation || i);
+		if(this.repeat){
+			__width = this.width;
+			this.framesArr = [];
+			var image;
+			var _width = this.image.width/this.frames;
+			var _height = this.image.height;
+			for(var i = 0; i < this.frames; i++){
+				image = document.createElement("canvas");
+				image.width = _width;
+				image.height = _height;
+				var _ctx = image.getContext("2d");
+				_ctx.drawImage(this.image,i*_width,0,_width,_height,0,0,_width,_height);
+				this.framesArr[i] = image;
+			};
+		}
+		
+		this.width = __width;
 	}
 }
 
@@ -63,6 +83,14 @@ Texture.prototype.getCurrentFrameClip = function() {
 	}
 
 	var frame = this.currentAnimation.start + Math.floor(delta/this.currentAnimation.delay) % this.frames;
+	if(frame != this.lastFrame){
+		if(this.onFrames[frame])
+			this.onFrames[frame]();
+		this.lastFrame = frame;
+	}
+	if(this.repeat){
+		return this.framesArr[frame];
+	}
 	return {
 		x: frame*this.width,
 		y: 0,
@@ -77,16 +105,21 @@ Texture.prototype.draw = function(ctx, width, height) {
 	ctx.save();
 
 	ctx.scale(this.scale.x, this.scale.y);
+	ctx.translate(this.position.x,this.position.y);
 	ctx.translate(-this.width/2, -this.height/2);
 
 	ctx.globalAlpha = this.alpha;
 	if(this.repeat){
-		ctx.fillStyle = ctx.createPattern(this.image, "repeat");
-		ctx.fillRect(0, 0, width/this.scale.x, height/this.scale.y);
+		var image = this.image;
+		if(this.animated)
+			image = this.getCurrentFrameClip();
+		ctx.fillStyle = ctx.createPattern(image, "repeat");
+		ctx.translate(this.width*(this.scale.x-1)/(2*this.scale.x), this.height*(this.scale.y-1)/(2*this.scale.y));
+		ctx.fillRect(0 , 0 , this.width/this.scale.x, this.height/this.scale.y);
 	}
 	else {
 		var clip = this.clip;
-
+		
 		if(this.animated){
 			clip = this.getCurrentFrameClip();
 			// ctx.fillStyle = "#F00";

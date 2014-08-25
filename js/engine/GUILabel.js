@@ -36,11 +36,13 @@ function GUILabel(options){
 GUILabel.prototype = Object.create( Object2D.prototype );
 
 GUILabel.prototype.render = function (ctx){
+	if(!this.visible){
+		Object2D.prototype.render.call(this, ctx);
+		return;
+	}
 	ctx.save();
 	ctx.translate(this.position.x, this.position.y);
 	ctx.rotate(this.rotation);
-	if(!this.visible)
-		return;
 	if(this.texture){
 		this.texture.draw(ctx);
 	}

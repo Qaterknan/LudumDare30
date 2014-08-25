@@ -13,8 +13,10 @@ function Object2D(options){
 	this.width = this.options.width === undefined ? 1 : this.options.width;
 	this.height = this.options.height === undefined ? 1 : this.options.height;
 	this.texture = this.options.texture === undefined ? false : this.options.texture;
+	this.id = this.options.id === undefined ? "" : this.options.id;
 	
-	this.debug = false;
+	this.visible = this.options.visible === undefined ? true : this.options.visible;
+	this.debug = this.options.debug === undefined ? true : this.options.debug;
 	this.fixed = this.options.fixed === undefined ? false : this.options.fixed;
 
 	this.parent = null;
@@ -59,7 +61,7 @@ Object2D.prototype.render = function(ctx) {
 	ctx.save();
 	ctx.translate(this.position.x, this.position.y);
 	ctx.rotate(this.rotation);
-	if(this.texture)
+	if(this.texture && this.visible)
 		this.texture.draw(ctx);
 	if(this.debug){
 		ctx.strokeStyle = "#4DE352";
@@ -104,9 +106,15 @@ Object2D.prototype.removeChildren = function() {
 };
 
 Object2D.prototype.pointIn = function ( v ){ 
-	var vec = v.clone();//new Vec2(v.x, v.y);
+	var vec = v.clone();
 	vec.sub(this.position);
-	vec.rotate(-this.rotation);
+	
+	if(this.fixed){
+		vec.sub(game.world.camera.position);
+	}
+	
+	vec.rotate(-this.rotation/*-game.world.camera.rotation*/);
+	
 	return (vec.x >= -this.width/2 && vec.x <= this.width/2) && (vec.y >= -this.height/2 && vec.y <= this.height/2);
 };
 

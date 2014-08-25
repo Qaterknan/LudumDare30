@@ -1,7 +1,7 @@
 function Camera(){
 	this.position = new Vec2();
 	this.scale = new Vec2(1, 1);
-
+	this.velocity = new Vec2();
 	// kdyžtak dodělat
 	// this.bounds = {
 	// 	topLeft: new Vec2(0, 0),
@@ -24,6 +24,7 @@ Camera.prototype.tick = function(dt) {
 		var theta = utils.randFloat(0, Math.PI*2);
 		this.position.add(new Vec2(Math.cos(theta),Math.sin(theta)).multiplyScalar(this.shakingIntensity));
 	}
+	this.position.add(this.velocity.clone().multiplyScalar(dt));
 };
 
 Camera.prototype.shake = function(intensity, duration) {
